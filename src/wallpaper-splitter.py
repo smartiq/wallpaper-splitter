@@ -31,6 +31,8 @@ except:
    sys.exit("Please install Pillow")
 
 Msg_level = 0
+MONITOR_SCALE = 2 # 8x16 for a ``normal'' cursor so use a vertical scale factor
+                  # of 2.
 
 def log_debug(*args, **kwds):
    if Msg_level >= 7:
@@ -91,7 +93,7 @@ def find_monitor_extremes(monitors):
          log_debug("Monitor", monitor["name"], "gives new right edge",
                    right_edge)
          max_width = right_edge
-      top_edge = monitor["upper_left"][1]
+      top_edge = monitor["upper_left"][1] + monitor["resolution"][1]
       if top_edge > max_height:
          log_debug("Monitor", monitor["name"], "gives new height",
                    top_edge)
@@ -123,6 +125,7 @@ def calculate_scale(monitors, output_width=None, output_height=None):
 
    # We are either WIDTH or HEIGHT limited
    limiting_factor = None
+   output_ratio = None
 
    # Find the monitor ratio
    monitor_width, monitor_height = find_monitor_extremes(monitors)
@@ -139,11 +142,16 @@ def calculate_scale(monitors, output_width=None, output_height=None):
       output_height = int(monitor_height * scale_factor)
    else:
       # We have to fit in a specified width and height
-      scale_factor = float(output_width) / float(output_height)
-      if (scale_factor > monitor_ratio):
+      output_ratio = float(output_height) / float(output_width)
+      if (output_ratio < monitor_ratio):
          limiting_factor = 'HEIGHT'
+         scale_factor = float(output_height) / float(monitor_height)
       else:
          limiting_factor = 'WIDTH'
+         scale_factor = float(output_width) / float(monitor_width)
+
+   if output_ratio is None:
+      output_ratio = float(output_height) / float(output_width)
 
    ret = {"output_width": output_width,
           "output_height": output_height,
@@ -151,7 +159,8 @@ def calculate_scale(monitors, output_width=None, output_height=None):
           "monitor_height": monitor_height,
           "scale_factor": scale_factor,
           "limiting_factor": limiting_factor,
-          "monitor_ratio": monitor_ratio}
+          "monitor_ratio": monitor_ratio,
+          "output_ratio": output_ratio}
    log_debug("Using scale of:", ret)
    return ret
 
@@ -160,7 +169,7 @@ def pixel_to_terminal(layout, pixel_location, offset=None):
    pixel_x, pixel_y = pixel_location
    # Subtrace 1 to bump everything down into lower cell
    term_x = int((pixel_x-1) * layout['scale_factor'])
-   term_y = int((pixel_y-1) * layout['scale_factor'])
+   term_y = int(((pixel_y-1) * layout['scale_factor']) / MONITOR_SCALE)
 
    if offset is not None:
       term_x += offset[0]
@@ -172,8 +181,8 @@ def pixel_to_terminal(layout, pixel_location, offset=None):
    if term_x >= layout['output_width']:
       term_x = layout['output_width'] - 1
 
-   if term_y >= layout['output_height']:
-      term_y = layout['output_height'] - 1
+   if term_y >= int(layout['output_height'] / MONITOR_SCALE):
+      term_y = int((layout['output_height'] / MONITOR_SCALE) - 1)
 
    return [term_x, term_y]
 
@@ -241,12 +250,12 @@ def print_to_vid_buffer(v_buf, layout, monitor):
                                     monitor['upper_left'][1]])
    lower_left = pixel_to_terminal(layout,
                                   [monitor['upper_left'][0],
-                                   monitor['upper_left'][1] -
+                                   monitor['upper_left'][1] +
                                    monitor['resolution'][1]])
    lower_right = pixel_to_terminal(layout,
                                    [monitor['upper_left'][0] +
                                     monitor['resolution'][0],
-                                    monitor['upper_left'][1] -
+                                    monitor['upper_left'][1] +
                                     monitor['resolution'][1]])
    add_horiz_line(v_buf, upper_left, upper_right)
    add_horiz_line(v_buf, lower_left, lower_right)
@@ -254,14 +263,14 @@ def print_to_vid_buffer(v_buf, layout, monitor):
    add_vert_line(v_buf, upper_right, lower_right)
    add_text(v_buf, monitor['name'], pixel_to_terminal(layout,
                                                       monitor['upper_left'],
-                                                      offset=[1,-1]))
+                                                      offset=[1,1]))
 
 def print_vid_buffer(v_buf):
    """Print the video buffer to the console"""
    columns = len(v_buf)
    rows = len(v_buf[0])
    log_debug("Video buffer is", columns, "columns", rows, "rows")
-   for row in range(rows-1, -1, -1):
+   for row in range(rows):
       for column in range(columns):
          sys.stdout.write(v_buf[column][row])
       sys.stdout.write('\n')
@@ -271,9 +280,12 @@ def display_layout(layout, monitors):
 
    # Allocate the Video Buffer
    vid_buffer = []
-   for y in range(layout['output_width']):
+   terminal_width = layout['output_width']
+   terminal_height = int(layout['output_height'] / MONITOR_SCALE)
+   log_debug("Terminal output is:", [terminal_width, terminal_height])
+   for y in range(terminal_width):
       line = []
-      for x in range(layout['output_height']):
+      for x in range(terminal_height):
          line.append(' ')
       vid_buffer.append(line)
    for monitor in monitors:
@@ -282,10 +294,6 @@ def display_layout(layout, monitors):
    print("Approximate Layout:")
    print_vid_buffer(vid_buffer)
 
-def split_images(monitors, opts):
-   for image in opts.img_file:
-      split_image(monitors, opts, image)
-
 def open_image(image):
    if not os.path.isfile(image):
       print("Warning:", image, "does not exist.  Skipping...")
@@ -293,15 +301,42 @@ def open_image(image):
    f = open(image, 'rb')
    return Image.open(f)
 
+def split_images(monitors, opts):
+   """Split apart the images"""
+   for image in opts.img_file:
+      print("Processing: ", image)
+      split_image(monitors, opts, image)
+
 def split_image(monitors, opts, image):
+   """Split apart an individual image"""
    img = open_image(image)
    if img is None:
       return
 
-   width, height = img.size
+   img_width, img_height = img.size
    output_layout = calculate_scale(monitors,
-                                   width=width,
-                                   height=height)
+                                   output_width=img_width,
+                                   output_height=img_height)
+   scale_factor = output_layout['scale_factor']
+   left_padding = int((img_width - (output_layout['monitor_width'] * scale_factor)) / 2)
+   bottom_padding = int((img_height - (output_layout['monitor_height'] * scale_factor)) / 2)
+   log_debug("left_padding:", left_padding)
+   log_debug("bottom_padding:", bottom_padding)
+
+   log_debug("Cropping an image at: [left, upper, right, lower]")
+   for monitor in monitors:
+      left = left_padding + monitor['upper_left'][0]
+      upper = bottom_padding + monitor['upper_left'][1]
+      right = left + monitor['resolution'][0]
+      lower = upper + monitor['resolution'][1]
+      log_debug("Cropping an image at:", [left, upper, right, lower],
+                "->", (right - left, lower - upper))
+      cropped_image = img.crop(box=[left,upper,right,lower])
+      output_filename = image[:image.rfind('.')] + monitor['suffix'] + \
+                        image[image.rfind('.'):]
+      log_debug("Writing output to", output_filename)
+      with open(output_filename, 'wb') as f:
+         cropped_image.save(f)
 
 
 if __name__ == '__main__':
@@ -312,4 +347,4 @@ if __name__ == '__main__':
                                output_width=get_terminal_width())
       display_layout(layout, monitors)
 
-   #split_images(monitors, opts)
+   split_images(monitors, opts)

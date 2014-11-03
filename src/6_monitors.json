@@ -5,17 +5,17 @@
    [
       {"name": "1905FP",
        "resolution": [1280, 1024],
-       "upper_left": [640, 2224],
+       "upper_left": [640, 176],
        "suffix": "_1"
       },
       {"name": "U2412M",
        "resolution": [1920, 1200],
-       "upper_left": [1920, 2400],
+       "upper_left": [1920, 0],
        "suffix": "_2"
       },
       {"name": "1905FP",
        "resolution": [1280, 1024],
-       "upper_left": [3840, 2224],
+       "upper_left": [3840, 176],
        "suffix": "_3"
       },
       {"name": "U2412M",
