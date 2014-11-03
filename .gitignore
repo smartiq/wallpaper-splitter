@@ -56,3 +56,4 @@ target/
 # Barry Junk
 *.swp
 *.jpg
+.directory
