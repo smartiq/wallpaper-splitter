@@ -325,18 +325,21 @@ def split_image(monitors, opts, image):
 
    log_debug("Cropping an image at: [left, upper, right, lower]")
    for monitor in monitors:
-      left = left_padding + monitor['upper_left'][0]
-      upper = bottom_padding + monitor['upper_left'][1]
-      right = left + monitor['resolution'][0]
-      lower = upper + monitor['resolution'][1]
-      log_debug("Cropping an image at:", [left, upper, right, lower],
+      left = left_padding + int(monitor['upper_left'][0] * scale_factor)
+      upper = bottom_padding + int(monitor['upper_left'][1] * scale_factor)
+      right = left + int(monitor['resolution'][0] * scale_factor)
+      lower = upper + int(monitor['resolution'][1] * scale_factor)
+      log_debug("Cropping image at:", [left, upper, right, lower],
                 "->", (right - left, lower - upper))
       cropped_image = img.crop(box=[left,upper,right,lower])
+      log_debug("Resizing image to:", monitor['resolution'])
+      resized_image = cropped_image.resize(monitor['resolution'],
+                                           resample=Image.BICUBIC)
       output_filename = image[:image.rfind('.')] + monitor['suffix'] + \
                         image[image.rfind('.'):]
       log_debug("Writing output to", output_filename)
       with open(output_filename, 'wb') as f:
-         cropped_image.save(f)
+         resized_image.save(f)
 
 
 if __name__ == '__main__':
