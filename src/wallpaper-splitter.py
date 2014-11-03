@@ -319,14 +319,14 @@ def split_image(monitors, opts, image):
                                    output_height=img_height)
    scale_factor = output_layout['scale_factor']
    left_padding = int((img_width - (output_layout['monitor_width'] * scale_factor)) / 2)
-   bottom_padding = int((img_height - (output_layout['monitor_height'] * scale_factor)) / 2)
+   top_padding = int((img_height - (output_layout['monitor_height'] * scale_factor)) / 2)
    log_debug("left_padding:", left_padding)
-   log_debug("bottom_padding:", bottom_padding)
+   log_debug("top_padding:", top_padding)
 
    log_debug("Cropping an image at: [left, upper, right, lower]")
    for monitor in monitors:
       left = left_padding + int(monitor['upper_left'][0] * scale_factor)
-      upper = bottom_padding + int(monitor['upper_left'][1] * scale_factor)
+      upper = top_padding + int(monitor['upper_left'][1] * scale_factor)
       right = left + int(monitor['resolution'][0] * scale_factor)
       lower = upper + int(monitor['resolution'][1] * scale_factor)
       log_debug("Cropping image at:", [left, upper, right, lower],
