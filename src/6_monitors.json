@@ -1,0 +1,37 @@
+{
+   "comment": "6 Dell monitors in a 3 across, 2 up configuration.",
+
+   "monitors":
+   [
+      {"name": "1905FP",
+       "resolution": [1280, 1024],
+       "upper_left": [640, 2224],
+       "suffix": "_1"
+      },
+      {"name": "U2412M",
+       "resolution": [1920, 1200],
+       "upper_left": [1920, 2400],
+       "suffix": "_2"
+      },
+      {"name": "1905FP",
+       "resolution": [1280, 1024],
+       "upper_left": [3840, 2224],
+       "suffix": "_3"
+      },
+      {"name": "U2412M",
+       "resolution": [1920, 1200],
+       "upper_left": [0, 1200],
+       "suffix": "_4"
+      },
+      {"name": "U2410",
+       "resolution": [1920, 1200],
+       "upper_left": [1920, 1200],
+       "suffix": "_5"
+      },
+      {"name": "U2412M",
+       "resolution": [1920, 1200],
+       "upper_left": [3840, 1200],
+       "suffix": "_6"
+      }
+   ]
+}
