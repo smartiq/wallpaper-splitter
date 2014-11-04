@@ -440,9 +440,19 @@ def split_image(monitors, opts, image):
                 "->", (right - left, lower - upper))
       cropped_image = img.crop(box=[left,upper,right,lower])
       if not opts.crop_only:
-         log_debug("Resizing image to:", monitor['resolution'])
-         resized_image = cropped_image.resize(monitor['resolution'],
-                                              resample=Image.BICUBIC)
+         if monitor['resolution'] != cropped_image.size:
+            alg = Image.BICUBIC
+            alg_name = "BICUBIC"
+            if monitor['resolution'][0] < cropped_image.size[0]:
+               # We are shrinking
+               alg = Image.ANTIALIAS
+               alg_name = "ANTIALIAS"
+            log_debug("Resizing", cropped_image.size, "image to:",
+                      monitor['resolution'], "(" + alg_name + ")")
+            resized_image = cropped_image.resize(monitor['resolution'],
+                                                 resample=alg)
+         else:
+            log_debug("Output image already in correct size.  Skipping resize")
       else:
          resized_image = cropped_image
       output_filename = image[:image.rfind('.')] + monitor['suffix'] + \
