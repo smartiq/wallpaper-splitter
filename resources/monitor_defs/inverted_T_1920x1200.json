@@ -1,0 +1,27 @@
+{
+   "comment": "Inverted T composed of 4 1920x1200 monitors",
+
+   "monitors":
+   [
+      {"name": "Top",
+       "resolution": [1920, 1200],
+       "upper_left": [1920, 0],
+       "suffix": "_1"
+      },
+      {"name": "Left",
+       "resolution": [1920, 1200],
+       "upper_left": [0, 1200],
+       "suffix": "_2"
+      },
+      {"name": "Middle",
+       "resolution": [1920, 1200],
+       "upper_left": [1920, 1200],
+       "suffix": "_3"
+      },
+      {"name": "Right",
+       "resolution": [1920, 1200],
+       "upper_left": [3840, 1200],
+       "suffix": "_4"
+      }
+   ]
+}
