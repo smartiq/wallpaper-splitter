@@ -44,12 +44,12 @@ First you need to make a monitor definition JSON file.  An example is shown here
 }
 
 ```
-The resolution of each monitor should be given in pixels along with the quardinate of the upper left
+The resolution of each monitor should be given in pixels along with the coordinate of the upper left
 pixel.  The coordinate system has (0,0) in the upper left in the form of (x,y).  y grows positive as it grows
 down.
 
 If this seems a little hard to visualize simply convert an image with wallpaper-splitter and it will print
-out a representation of the monitor configuration.  For example, lets use this example monitor definition file
+out a representation of the given monitor configuration.  For example, lets use this example monitor definition file
 to split an image:
 ```
 > python3 src/wallpaper-splitter.py -m resources/monitor_defs/inverted_T_1920x1200.json image.jpg
@@ -82,13 +82,13 @@ Wall-paper splitter has the following dependencies:
 
 Algorithm
 ------
-Wallpaper splitter tries its best to overlay the monitor configuration onto the
+Wallpaper-splitter tries its best to overlay the monitor configuration onto the
 source image(s) provided.  It tries to stretch the monitors as large as possible
 onto the image(s).  It will either bump up against the left/right or the top/bottom
 of the image first.  As soon as that happens, it figures out how many pixels on the
 image correspond to pixels on the monitor and then crops the image for each monitor.
 After that, it scales the images to match the output for each monitor wallpaper
-desired.
+desired (unless told not to).
 
 Controlling the Output
 -------
