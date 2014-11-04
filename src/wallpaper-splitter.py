@@ -41,6 +41,7 @@ def log_debug(*args, **kwds):
 def parse_cmdline():
    """Do command line parsing stuff"""
    parser = argparse.ArgumentParser(description = 'Wallpaper-Splitter')
+
    parser.add_argument('--monitor', '-m', required=True,
                        metavar='<monitor_def_file.json>',
                        help="Monitor Layout Definition JSON File")
@@ -50,6 +51,27 @@ def parse_cmdline():
                        help='Image files to convert')
    parser.add_argument("--verbose", '-v', action='store_true',
                        help='Verbose Output')
+
+   pos = parser.add_argument_group('Crop Padding')
+
+   leftright = pos.add_mutually_exclusive_group()
+   leftright.add_argument("--left", help="Left justify the cropped images",
+                          action='store_true')
+   leftright.add_argument("--right", help="Right justify the cropped images",
+                          action='store_true')
+
+   topbot = pos.add_mutually_exclusive_group()
+   topbot.add_argument("--top", help="Top justify the cropped images",
+                       action='store_true')
+   topbot.add_argument("--bottom", help="Bottom justify the cropped images",
+                        action='store_true')
+
+   steps = parser.add_argument_group('Step Selection')
+   steps.add_argument("--crop_only",
+                      help="Do not resize the output images.  Crop only",
+                      action='store_true')
+
+   # Now parse them dudes
    args = parser.parse_args()
 
    if args.verbose:
@@ -311,6 +333,44 @@ def split_images(monitors, opts):
       print("Processing: ", image)
       split_image(monitors, opts, image)
 
+def calculate_padding(monitors, opts, output_layout, img_size):
+   img_width, img_height = img_size
+   scale_factor = output_layout['scale_factor']
+
+   vert_remainder = int(img_height - (output_layout['monitor_height'] * scale_factor))
+   horz_remainder = int(img_width -  (output_layout['monitor_width'] * scale_factor))
+   log_debug("vertical_remainder:  ", vert_remainder)
+   log_debug("horizontal_remainder:", horz_remainder)
+
+   if opts.left:
+      left_padding = 0
+      right_padding = horz_remainder
+   elif opts.right:
+      left_padding = horz_remainder
+      right_padding = 0
+   else:
+      # Center it
+      left_padding = int(horz_remainder / 2)
+      right_padding = left_padding
+
+   if opts.top:
+      top_padding = 0
+      bottom_padding = vert_remainder
+   elif opts.bottom:
+      top_padding = vert_remainder
+      bottom_padding = 0
+   else:
+      #Center it
+      top_padding = int(vert_remainder / 2)
+      bottom_padding = top_padding
+
+   log_debug("left_padding:", left_padding)
+   log_debug("right_padding:", right_padding)
+   log_debug("top_padding:", top_padding)
+   log_debug("bottom_padding:", bottom_padding)
+   return left_padding, right_padding, top_padding, bottom_padding
+
+
 def split_image(monitors, opts, image):
    """Split apart an individual image"""
    img = open_image(image)
@@ -322,10 +382,9 @@ def split_image(monitors, opts, image):
                                    output_width=img_width,
                                    output_height=img_height)
    scale_factor = output_layout['scale_factor']
-   left_padding = int((img_width - (output_layout['monitor_width'] * scale_factor)) / 2)
-   top_padding = int((img_height - (output_layout['monitor_height'] * scale_factor)) / 2)
-   log_debug("left_padding:", left_padding)
-   log_debug("top_padding:", top_padding)
+
+   left_padding, _, top_padding, _ = \
+      calculate_padding(monitors, opts, output_layout, img.size)
 
    log_debug("Cropping an image at: [left, upper, right, lower]")
    for monitor in monitors:
@@ -336,9 +395,12 @@ def split_image(monitors, opts, image):
       log_debug("Cropping image at:", [left, upper, right, lower],
                 "->", (right - left, lower - upper))
       cropped_image = img.crop(box=[left,upper,right,lower])
-      log_debug("Resizing image to:", monitor['resolution'])
-      resized_image = cropped_image.resize(monitor['resolution'],
-                                           resample=Image.BICUBIC)
+      if not opts.crop_only:
+         log_debug("Resizing image to:", monitor['resolution'])
+         resized_image = cropped_image.resize(monitor['resolution'],
+                                              resample=Image.BICUBIC)
+      else:
+         resized_image = cropped_image
       output_filename = image[:image.rfind('.')] + monitor['suffix'] + \
                         image[image.rfind('.'):]
       log_debug("Writing output to", output_filename)
