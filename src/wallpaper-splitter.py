@@ -59,12 +59,20 @@ def parse_cmdline():
                           action='store_true')
    leftright.add_argument("--right", help="Right justify the cropped images",
                           action='store_true')
+   leftright.add_argument("--left-padding", help="Left Padding value",
+                          type=int, action='store')
+   leftright.add_argument("--right-padding", help="Right Padding value",
+                          type=int, action='store')
 
    topbot = pos.add_mutually_exclusive_group()
    topbot.add_argument("--top", help="Top justify the cropped images",
                        action='store_true')
    topbot.add_argument("--bottom", help="Bottom justify the cropped images",
                         action='store_true')
+   topbot.add_argument("--top-padding", help="Top Padding value",
+                       type=int, action='store')
+   topbot.add_argument("--bottom-padding", help="Bottom Padding value",
+                       type=int, action='store')
 
    steps = parser.add_argument_group('Step Selection')
    steps.add_argument("--crop_only",
@@ -348,6 +356,24 @@ def calculate_padding(monitors, opts, output_layout, img_size):
    elif opts.right:
       left_padding = horz_remainder
       right_padding = 0
+   elif opts.left_padding is not None:
+      if opts.left_padding <= horz_remainder:
+         left_padding = opts.left_padding
+         right_padding = horz_remainder - left_padding
+      else:
+         print("WARNING: left_padding value of", opts.left_padding,
+               "> padding pixels of", horz_remainder, "(ignoring)")
+         left_padding = int(horz_remainder / 2)
+         right_padding = left_padding
+   elif opts.right_padding is not None:
+      if opts.right_padding <= horz_remainder:
+         right_padding = opts.right_padding
+         left_padding = horz_remainder - right_padding
+      else:
+         print("WARNING: right_padding value of", opts.right_padding,
+               "> padding pixels of", horz_remainder, "(ignoring)")
+         left_padding = int(horz_remainder / 2)
+         right_padding = left_padding
    else:
       # Center it
       left_padding = int(horz_remainder / 2)
@@ -359,6 +385,24 @@ def calculate_padding(monitors, opts, output_layout, img_size):
    elif opts.bottom:
       top_padding = vert_remainder
       bottom_padding = 0
+   elif opts.top_padding is not None:
+      if opts.top_padding <= vert_remainder:
+         top_padding = opts.top_padding
+         bottom_padding = vert_remainder - top_padding
+      else:
+         print("WARNING: top_padding value of", opts.top_padding,
+               "> padding pixels of", vert_remainder, "(ignoring)")
+         top_padding = int(vert_remainder / 2)
+         bottom_padding = top_padding
+   elif opts.bottom_padding is not None:
+      if opts.bottom_padding <= vert_remainder:
+         bottom_padding = opts.bottom_padding
+         top_padding = vert_remainder - bottom_padding
+      else:
+         print("WARNING: bottom_padding value of", opts.bottom_padding,
+               "> padding pixels of", vert_remainder, "(ignoring)")
+         top_padding = int(vert_remainder / 2)
+         bottom_padding = top_padding
    else:
       #Center it
       top_padding = int(vert_remainder / 2)
