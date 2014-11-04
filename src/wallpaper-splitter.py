@@ -264,6 +264,10 @@ def print_to_vid_buffer(v_buf, layout, monitor):
    add_text(v_buf, monitor['name'], pixel_to_terminal(layout,
                                                       monitor['upper_left'],
                                                       offset=[1,1]))
+   add_text(v_buf, "{0}x{1}".format(*monitor['resolution']),
+            pixel_to_terminal(layout,
+                              monitor['upper_left'],
+                              offset=[1,2]))
 
 def print_vid_buffer(v_buf):
    """Print the video buffer to the console"""
