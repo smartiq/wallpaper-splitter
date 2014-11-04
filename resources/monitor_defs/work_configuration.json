@@ -1,0 +1,27 @@
+{
+   "comment": "4 Various sized monitors horizontal",
+
+   "monitors":
+   [
+      {"name": "Left",
+       "resolution": [1280, 1024],
+       "upper_left": [0, 26],
+       "suffix": "_1"
+      },
+      {"name": "Left_Mid",
+       "resolution": [1680, 1050],
+       "upper_left": [1280, 0],
+       "suffix": "_2"
+      },
+      {"name": "Right_Mid",
+       "resolution": [1440, 900],
+       "upper_left": [2960, 150],
+       "suffix": "_3"
+      },
+      {"name": "Right",
+       "resolution": [1440, 900],
+       "upper_left": [4400, 150],
+       "suffix": "_4"
+      }
+   ]
+}
