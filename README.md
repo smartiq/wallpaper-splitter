@@ -72,7 +72,7 @@ Monitor Layout read from definition file:
 |                         |                         |                         ||
 +-------------------------+-------------------------+-------------------------+V
 +<-----------------------------------5760------------------------------------->+
-Processing:  endlessbluenight2k1414k.jpg
+Processing:  image.jpg
 
 Projection of monitor definition file onto image.jpg:
                                                                                +
@@ -195,7 +195,7 @@ Monitor Layout read from definition file:
 |                         |                         |                         ||
 +-------------------------+-------------------------+-------------------------+V
 +<-----------------------------------5760------------------------------------->+
-Processing:  endlessbluenight2k1414k.jpg
+Processing:  image.jpg
 
 Projection of monitor definition file onto image.jpg:
                                                                                +
