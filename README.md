@@ -52,7 +52,8 @@ If this seems a little hard to visualize simply convert an image with wallpaper-
 out a representation of the given monitor configuration.  For example, lets use this example monitor definition file
 to split an image:
 ```
-> python3 src/wallpaper-splitter.py -m resources/monitor_defs/inverted_T_1920x1200.json image.jpg
+> python3 src/wallpaper-splitter.py -m \
+> resources/monitor_defs/inverted_T_1920x1200.json image.jpg
 Monitor Layout read from definition file:
                           +-------------------------+                          +
                           |Top                      |                          ^
@@ -174,7 +175,8 @@ Putting it All Together
 --------
 After you have created a monitor definition file, simply tell wallpaper-splitter to split your images for you:
 ```
->python3 src/wallpaper-splitter.py -m resources/monitor_defs/6_monitors.json karesansuinight2k1414k3x.jpg --left-padding 3800
+> python3 src/wallpaper-splitter.py -m resources/monitor_defs/6_monitors.json \
+> image.jpg --left-padding 3800
 Monitor Layout read from definition file:
                           +-------------------------+                          +
                           |Top                      |                          ^
