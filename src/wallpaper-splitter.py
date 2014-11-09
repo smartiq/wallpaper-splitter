@@ -132,22 +132,6 @@ def find_monitor_extremes(monitors):
    return max_width, max_height
 
 
-def calculate_display(scale):
-   output_num_cols_pixels = output_width
-   output_num_rows_pixels = output_height
-   log_debug("Making", output_width, "pixels fit on", output_num_cols_pixels, "columns")
-
-
-   pix_per_col = int(float(output_width)/float(output_num_cols_pixels))
-   log_debug("Using", pix_per_col, "pixels per column")
-   # Assume the console is 8x16 character pixels, which means the height
-   # is twice the width
-   if height_scale is not None and output_height is None:
-      pix_per_row = height_scale * pix_per_col
-   log_debug("Using", pix_per_row, "pixels per row")
-   output_num_rows_pixels = int(float(output_height) / float(pix_per_row))
-   log_debug("Using", output_num_rows_pixels, "rows")
-
 def calculate_scale(monitors, output_width=None, output_height=None):
    """Calculate the Desired Monitor Layout.  output_width or output_height
       could be limiting factor."""
@@ -194,18 +178,27 @@ def calculate_scale(monitors, output_width=None, output_height=None):
    log_debug("Using scale of:", ret)
    return ret
 
-def pixel_to_terminal(layout, pixel_location, offset=None):
+def pixel_to_terminal(layout, pixel_location,
+                      term_offset=None, pixel_offset=None):
    """Convert pixels to terminal locations"""
    pixel_x, pixel_y = pixel_location
+
+   if pixel_offset is not None:
+      pixel_x += pixel_offset[0]
+      pixel_y += pixel_offset[1]
+
    # Subtrace 1 to bump everything down into lower cell
    term_x = int((pixel_x-1) * layout['scale_factor'])
    term_y = int(((pixel_y-1) * layout['scale_factor']) / MONITOR_SCALE)
 
-   if offset is not None:
-      term_x += offset[0]
-      term_y += offset[1]
+   if term_offset is not None:
+      term_x += term_offset[0]
+      term_y += term_offset[1]
 
-   log_debug(pixel_location, "becomes", [term_x, term_y], "with offset", offset)
+   log_debug(pixel_location, "becomes", [term_x, term_y],
+             "with term_offset", term_offset,
+             "and pixel_offset", pixel_offset,
+             "using scale factor of", layout['scale_factor'])
 
    # Keep things in check
    if term_x >= layout['output_width']:
@@ -216,7 +209,7 @@ def pixel_to_terminal(layout, pixel_location, offset=None):
 
    return [term_x, term_y]
 
-def add_horiz_line(v_buf, v_1, v_2):
+def add_horiz_line(v_buf, v_1, v_2, arrows=False, title=None):
    """Draw a horizonal line from v_1 to v_2 in v_buf"""
    # Horizontal line has same Y component
    log_debug("Drawing horiz line from", v_1, "to", v_2)
@@ -232,16 +225,30 @@ def add_horiz_line(v_buf, v_1, v_2):
       x_2 = x_1
       x_1 = t
 
+   text = {}
+   if title is not None:
+      center = x_2 - x_1
+      center_with_offset = int((center - len(title)) / 2)
+      for x in range(0, len(title)):
+         text[center_with_offset + x] = title[x]
+
    for x in range(x_1+1, x_2):
       if v_buf[x][y] == '+':
          continue
       try:
-         v_buf[x][y] = '-'
+         if (x == (x_1 + 1) and arrows):
+            v_buf[x][y] = '<'
+         elif (x == (x_2 - 1) and arrows):
+            v_buf[x][y] = '>'
+         elif x in text:
+            v_buf[x][y] = text[x]
+         else:
+            v_buf[x][y] = '-'
       except:
          print("Unable to set[", x, ",", y, "]")
          raise
 
-def add_vert_line(v_buf, v_1, v_2):
+def add_vert_line(v_buf, v_1, v_2, arrows = False, title=None):
    """Draw a veritcal line from v_1 to v_2 in v_buf"""
    log_debug("Drawing vertical line from", v_1," to", v_2)
    assert v_1[0] == v_2[0]
@@ -256,11 +263,24 @@ def add_vert_line(v_buf, v_1, v_2):
       y_2 = y_1
       y_1 = t
 
+   text = {}
+   if title is not None:
+      center = y_2 - y_1
+      center_with_offset = int((center - len(title)) / 2)
+      for y in range(0, len(title)):
+         text[center_with_offset + y] = title[y]
    for y in range(y_1+1, y_2):
       if v_buf[x][y] == '+':
          continue
       try:
-         v_buf[x][y] = '|'
+         if (y == (y_1 + 1) and arrows):
+            v_buf[x][y] = '^'
+         elif (y == (y_2 - 1) and arrows):
+            v_buf[x][y] = 'V'
+         elif y in text:
+            v_buf[x][y] = text[y]
+         else:
+            v_buf[x][y] = '|'
       except:
          print("Unable to set[", x, ",", y, "]")
          raise
@@ -269,35 +289,52 @@ def add_text(v_buf, text, location):
    for idx, val in enumerate(text):
       v_buf[location[0]+idx][location[1]] = val
 
+def add_overall_pixel_scales(v_buf, layout):
+   add_horiz_line(v_buf,
+                  [0, len(v_buf[0]) - 1],
+                  [len(v_buf) - 1, len(v_buf[0]) - 1],
+                  arrows = True,
+                  title = str(layout['monitor_width']))
+   add_vert_line(v_buf,
+                 [len(v_buf) - 1, 0],
+                 [len(v_buf) - 1, len(v_buf[0]) - 1],
+                 arrows = True,
+                 title = str(layout['monitor_height']))
 
-def print_to_vid_buffer(v_buf, layout, monitor):
+def print_to_vid_buffer(v_buf, layout, monitor, pixel_offset=None):
    """Print the monitor into the v_buf"""
    upper_left = pixel_to_terminal(layout,
-                                  monitor['upper_left'])
+                                  monitor['upper_left'],
+                                  pixel_offset=pixel_offset)
    upper_right = pixel_to_terminal(layout,
                                    [monitor['upper_left'][0] +
                                     monitor['resolution'][0],
-                                    monitor['upper_left'][1]])
+                                    monitor['upper_left'][1]],
+                                   pixel_offset=pixel_offset)
    lower_left = pixel_to_terminal(layout,
                                   [monitor['upper_left'][0],
                                    monitor['upper_left'][1] +
-                                   monitor['resolution'][1]])
+                                   monitor['resolution'][1]],
+                                  pixel_offset=pixel_offset)
    lower_right = pixel_to_terminal(layout,
                                    [monitor['upper_left'][0] +
                                     monitor['resolution'][0],
                                     monitor['upper_left'][1] +
-                                    monitor['resolution'][1]])
+                                    monitor['resolution'][1]],
+                                   pixel_offset=pixel_offset)
    add_horiz_line(v_buf, upper_left, upper_right)
    add_horiz_line(v_buf, lower_left, lower_right)
    add_vert_line(v_buf, upper_left, lower_left)
    add_vert_line(v_buf, upper_right, lower_right)
    add_text(v_buf, monitor['name'], pixel_to_terminal(layout,
                                                       monitor['upper_left'],
-                                                      offset=[1,1]))
+                                                      term_offset=[1,1],
+                                                      pixel_offset=pixel_offset))
    add_text(v_buf, "{0}x{1}".format(*monitor['resolution']),
             pixel_to_terminal(layout,
                               monitor['upper_left'],
-                              offset=[1,2]))
+                              term_offset=[1,2],
+                              pixel_offset=pixel_offset))
 
 def print_vid_buffer(v_buf):
    """Print the video buffer to the console"""
@@ -309,7 +346,7 @@ def print_vid_buffer(v_buf):
          sys.stdout.write(v_buf[column][row])
       sys.stdout.write('\n')
 
-def display_layout(layout, monitors):
+def display_layout(layout, monitors, left_padding=0, top_padding=0):
    """Print some output of what the monitor layout looks like"""
 
    # Allocate the Video Buffer
@@ -317,15 +354,15 @@ def display_layout(layout, monitors):
    terminal_width = layout['output_width']
    terminal_height = int(layout['output_height'] / MONITOR_SCALE)
    log_debug("Terminal output is:", [terminal_width, terminal_height])
-   for y in range(terminal_width):
+   for y in range(terminal_width + 1):
       line = []
-      for x in range(terminal_height):
+      for x in range(terminal_height + 1):
          line.append(' ')
       vid_buffer.append(line)
    for monitor in monitors:
-      print_to_vid_buffer(vid_buffer, layout, monitor)
-
-   print("Approximate Layout:")
+      print_to_vid_buffer(vid_buffer, layout, monitor,
+                          pixel_offset=[left_padding, top_padding])
+   add_overall_pixel_scales(vid_buffer, layout)
    print_vid_buffer(vid_buffer)
 
 def open_image(image):
@@ -338,7 +375,8 @@ def open_image(image):
 def split_images(monitors, opts):
    """Split apart the images"""
    for image in opts.img_file:
-      print("Processing: ", image)
+      if not opts.quiet:
+         print("Processing: ", image)
       split_image(monitors, opts, image)
 
 def calculate_padding(monitors, opts, output_layout, img_size):
@@ -414,6 +452,19 @@ def calculate_padding(monitors, opts, output_layout, img_size):
    log_debug("bottom_padding:", bottom_padding)
    return left_padding, right_padding, top_padding, bottom_padding
 
+def show_projection(monitors, output_layout, opts, image,
+                    img_width, img_height, left_padding, top_padding):
+   # Make a fake monitor and use it
+   fake_monitor = [{"name": "Background Image",
+                    "resolution": [img_width, img_height],
+                    "upper_left": [0,0]}]
+   layout = calculate_scale(fake_monitor,
+                            output_width=get_terminal_width() - 1)
+   layout['scale_factor'] = layout['scale_factor'] * output_layout['scale_factor']
+   top_padding = top_padding * (MONITOR_SCALE * output_layout['scale_factor'])
+   print("Projection of monitor definition file onto", image + ":")
+   display_layout(layout, monitors,
+                  left_padding=left_padding, top_padding=top_padding)
 
 def split_image(monitors, opts, image):
    """Split apart an individual image"""
@@ -431,6 +482,9 @@ def split_image(monitors, opts, image):
       calculate_padding(monitors, opts, output_layout, img.size)
 
    log_debug("Cropping an image at: [left, upper, right, lower]")
+   if not opts.quiet:
+      show_projection(monitors, output_layout, opts, image, img_width,
+                      img_height, left_padding, top_padding)
    for monitor in monitors:
       left = left_padding + int(monitor['upper_left'][0] * scale_factor)
       upper = top_padding + int(monitor['upper_left'][1] * scale_factor)
@@ -467,7 +521,8 @@ if __name__ == '__main__':
    monitors = parse_monitor(opts.monitor)
    if not opts.quiet:
       layout = calculate_scale(monitors,
-                               output_width=get_terminal_width())
+                               output_width=get_terminal_width() - 1)
+      print("Monitor Layout read from definition file:")
       display_layout(layout, monitors)
 
    split_images(monitors, opts)
