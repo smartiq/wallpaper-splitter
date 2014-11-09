@@ -285,9 +285,14 @@ def add_vert_line(v_buf, v_1, v_2, arrows = False, title=None):
          print("Unable to set[", x, ",", y, "]")
          raise
 
-def add_text(v_buf, text, location):
-   for idx, val in enumerate(text):
-      v_buf[location[0]+idx][location[1]] = val
+def add_text(v_buf, monitor, layout, text, location):
+   required_term_spaces = len(text)
+   available_term_spaces = monitor['resolution'][0] * layout['scale_factor']
+   log_debug(text,"requires", str(required_term_spaces) + " terminal spaces;",
+             available_term_spaces, " terminal spaces available")
+   if required_term_spaces <= available_term_spaces:
+      for idx, val in enumerate(text):
+         v_buf[location[0]+idx][location[1]] = val
 
 def add_overall_pixel_scales(v_buf, layout):
    add_horiz_line(v_buf,
@@ -326,11 +331,18 @@ def print_to_vid_buffer(v_buf, layout, monitor, pixel_offset=None):
    add_horiz_line(v_buf, lower_left, lower_right)
    add_vert_line(v_buf, upper_left, lower_left)
    add_vert_line(v_buf, upper_right, lower_right)
-   add_text(v_buf, monitor['name'], pixel_to_terminal(layout,
-                                                      monitor['upper_left'],
-                                                      term_offset=[1,1],
-                                                      pixel_offset=pixel_offset))
-   add_text(v_buf, "{0}x{1}".format(*monitor['resolution']),
+   add_text(v_buf,
+            monitor,
+            layout,
+            monitor['name'],
+            pixel_to_terminal(layout,
+                              monitor['upper_left'],
+                              term_offset=[1,1],
+                              pixel_offset=pixel_offset))
+   add_text(v_buf,
+            monitor,
+            layout,
+            "{0}x{1}".format(*monitor['resolution']),
             pixel_to_terminal(layout,
                               monitor['upper_left'],
                               term_offset=[1,2],
@@ -461,7 +473,8 @@ def show_projection(monitors, output_layout, opts, image,
    layout = calculate_scale(fake_monitor,
                             output_width=get_terminal_width() - 1)
    layout['scale_factor'] = layout['scale_factor'] * output_layout['scale_factor']
-   top_padding = top_padding * (MONITOR_SCALE * output_layout['scale_factor'])
+   top_padding = int(top_padding * (MONITOR_SCALE * output_layout['scale_factor']))
+   print("")
    print("Projection of monitor definition file onto", image + ":")
    display_layout(layout, monitors,
                   left_padding=left_padding, top_padding=top_padding)
