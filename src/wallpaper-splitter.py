@@ -620,8 +620,7 @@ def split_image(monitors, opts, image):
       output_filename = image[:image.rfind('.')] + monitor['suffix'] + \
                         image[image.rfind('.'):]
       log_debug("Writing output to", output_filename)
-      with open(output_filename, 'wb') as f:
-         resized_image.save(f)
+      resized_image.save(output_filename)
 
 
 if __name__ == '__main__':
