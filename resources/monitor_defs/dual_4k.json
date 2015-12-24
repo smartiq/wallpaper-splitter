@@ -1,0 +1,17 @@
+{
+   "comment": "2 side-by-side 4k in 16:9 configuration",
+
+   "monitors":
+   [
+      {"name": "P2715Q",
+       "resolution": [3840, 2160],
+       "upper_left": [0, 0],
+       "suffix": "_1"
+      },
+      {"name": "P2715Q",
+       "resolution": [3840, 2160],
+       "upper_left": [3840, 0],
+       "suffix": "_2"
+      }
+   ]
+}
