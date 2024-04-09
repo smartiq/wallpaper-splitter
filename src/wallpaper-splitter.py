@@ -606,8 +606,8 @@ def split_image(monitors, opts, image):
             alg_name = "BICUBIC"
             if monitor['resolution'][0] < cropped_image.size[0]:
                # We are shrinking.  ANTIALIAS works better going down
-               alg = Image.ANTIALIAS
-               alg_name = "ANTIALIAS"
+               alg = Image.Resampling.LANCZOS
+               alg_name = "Resampling.LANCZOS"
             log_debug("Resizing", cropped_image.size, "image to:",
                       monitor['resolution'], "(" + alg_name + ")")
             resized_image = cropped_image.resize(monitor['resolution'],
